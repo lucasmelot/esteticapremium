@@ -20,8 +20,16 @@
     header?.classList.toggle('is-scrolled', window.scrollY > 24);
   };
 
+  let headerTicking = false;
   updateHeader();
-  window.addEventListener('scroll', updateHeader, { passive: true });
+  window.addEventListener('scroll', () => {
+    if (headerTicking) return;
+    headerTicking = true;
+    requestAnimationFrame(() => {
+      updateHeader();
+      headerTicking = false;
+    });
+  }, { passive: true });
 
   if (menuToggle && mobileMenu) {
     const closeMenu = () => {
@@ -76,6 +84,20 @@
     });
   }
 
+
+  // Mantém a animação contínua do marquee pausada fora da viewport.
+  const marquee = document.querySelector('.marquee-line');
+  if (marquee) {
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      marquee.classList.add('is-active');
+    } else {
+      const marqueeObserver = new IntersectionObserver(([entry]) => {
+        marquee.classList.toggle('is-active', entry.isIntersecting);
+      }, { rootMargin: '120px 0px' });
+      marqueeObserver.observe(marquee);
+    }
+  }
+
   // CTA inferior no mobile aparece somente depois de o hero ficar para trás.
   if (mobileCta && hero && 'IntersectionObserver' in window) {
     const heroObserver = new IntersectionObserver(([entry]) => {
@@ -109,13 +131,14 @@
   nextButton?.addEventListener('click', () => showTestimonial(testimonialIndex + 1));
   showTestimonial(0);
 
-  // Fecha o menu se a viewport voltar ao desktop.
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 940 && document.body.classList.contains('menu-open')) {
-      menuToggle?.setAttribute('aria-expanded', 'false');
-      mobileMenu?.classList.remove('is-open');
-      mobileMenu?.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('menu-open');
-    }
-  });
+  // Fecha o menu apenas quando o breakpoint realmente muda para desktop.
+  const desktopMedia = window.matchMedia('(min-width: 941px)');
+  const handleDesktopChange = (event) => {
+    if (!event.matches || !document.body.classList.contains('menu-open')) return;
+    menuToggle?.setAttribute('aria-expanded', 'false');
+    mobileMenu?.classList.remove('is-open');
+    mobileMenu?.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('menu-open');
+  };
+  desktopMedia.addEventListener?.('change', handleDesktopChange);
 })();
